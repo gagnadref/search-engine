@@ -1,13 +1,18 @@
 import nltk
+import math
 from collections import Counter
+import json
 
 class Index:
 	def __init__(self, documents="", commonWords=""):
 		if documents != "":
 			self.commonWords = self.getCommonWords(commonWords)
-			self.index = self.createIndexFromCACMFile(documents)
+			if documents[-4:]==".all":
+				self.index = self.createIndexFromCACMFile(documents)
+			else:
+				self.index = self.createIndexFromPersistedIndex(documents)
 			self.inversedIndex = self.inverseIndex()
-			self.documentSizes = {}
+			self.N = len(self.index)+1
 
 	def getCommonWords(self, filename): 
 		commonWords = []
@@ -26,6 +31,18 @@ class Index:
 			cacm.removeCommonWords(self.commonWords)
 			index.append(cacm.getFrequences())
 		return index
+
+	def createIndexFromPersistedIndex(self, filename):
+		index = []
+		with open(filename,"r") as persistedIndex:
+			index = json.loads(persistedIndex.read())
+		return index
+
+	def persistIndex(self, filename):
+		jsonIndex = json.dumps(self.index)
+		with open(filename, "w") as persistedIndex:
+			persistedIndex.write(jsonIndex)
+
 
 	def splitCACMFile(self, cacmFile):
 		listOfDocuments = []
@@ -51,39 +68,38 @@ class Index:
 		return self.index[docid-1]
 
 	def getIndexWithWord(self, word):
-		return self.inversedIndex.get(word,0)
-		# return self.inversedIndex[word]
+		return self.inversedIndex.get(word,{})
 
 	def getIndexWithDocidAndWord(self, docid, word):
 		return self.index[docid-1].get(word,0)
-		# return self.index[docid-1][word]
 
 	def getDocumentSize(self, docid):
-		if docid not in self.documentSizes:
-			self.documentSizes[docid] = 0
-			for word, freq in self.getIndexWithDocid(docid).iteritems():
-				self.documentSizes[docid]+=freq
-		return self.documentSizes[docid]
+		size = 0
+		for word, freq in self.getIndexWithDocid(docid).iteritems():
+			size+=freq
+		return size
 
-# class IndexBuilder:
-# 	def createIndex(self, path):
-# 		raise Exception("Abstract method createIndex should have been implemented")
+	def getDocumentNorm(self, docid):
+		norm = 0
+		for word, freq in self.getIndexWithDocid(docid).iteritems():
+			norm+=freq*freq
+		return math.sqrt(norm)
 
-# class CACMIndexBuilder(IndexBuilder):
-# 	def createIndex(self, path):
-# 		index = Index()
-# 		index.index = self.createIndexFromCACMFile(path)
+	def getTfIdf(self, docid, word):
+		tf=self.getIndexWithDocidAndWord(docid,word)
+		idf=len(self.getIndexWithWord(word))
+		tfidf=0.
+		if tf>0:
+			tfidf=(1+math.log(tf))*math.log(self.N/idf)
+		return tfidf
 
-# 	def createIndexFromCACMFile(self,filename):
-# 		index = []
-# 		with open(filename,"r") as cacmFile:
-# 			listOfDocuments = self.splitCACMFile(cacmFile)
-# 		for doc in listOfDocuments:
-# 			cacm = CACMParser.parse(doc)
-# 			cacm.tokenize()
-# 			cacm.removeCommonWords(self.commonWords)
-# 			index.append(cacm.getFrequences())
-# 		return index
+	def getTfIdfNorm(self, docid):
+		norm = 0
+		for word in self.getIndexWithDocid(docid):
+			tfidf=self.getTfIdf(docid, word)
+			norm+=tfidf*tfidf
+		return math.sqrt(norm)		
+
 
 			
 class CACM:
@@ -100,9 +116,10 @@ class CACM:
 
 	def tokenize(self):
 		self.tokens = []
-		self.tokens += nltk.word_tokenize(self.title.lower())
-		self.tokens += nltk.word_tokenize(self.summary.lower())
-		self.tokens += nltk.word_tokenize(self.keyWords.lower())
+		tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+')
+		self.tokens += tokenizer.tokenize(self.title.lower())
+		self.tokens += tokenizer.tokenize(self.summary.lower())
+		self.tokens += tokenizer.tokenize(self.keyWords.lower())
 
 	def removeCommonWords(self, commonWords) :
 		self.tokens = [word for word in self.tokens if word not in commonWords]

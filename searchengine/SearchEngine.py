@@ -1,5 +1,6 @@
 import Index
 import nltk
+import math
 from collections import Counter
 
 class SearchEngine:
@@ -26,23 +27,45 @@ class BooleanSearchEngine(SearchEngine):
 class VectorSearchEngine(SearchEngine):
 	def __init__(self, documents, commonWords):
 		self.index = Index.Index(documents, commonWords)
-		self.univers = range(1,len(self.index.index)+1)
+		self.univers = range(1,self.index.N)
 
 	def search(self, request):
-		q = request.split()
 		similarities = []
 		for docid in range(1,len(self.index.index)+1):
-			similarities.append((docid,self.getSimilarity(docid, q)))
+			similarities.append((docid,self.getSimilarity(docid, request)))
 		similarities.sort(key=lambda (doc, sim): sim, reverse=True)
 		return [docid for (docid, sim) in similarities]
 
-	def getSimilarity(self, docid, q):
+	def searchWithTfIdf(self, request):
+		similarities = []
+		for docid in range(1,len(self.index.index)+1):
+			similarities.append((docid,self.getTfIdfSimilarity(docid, request)))
+		similarities.sort(key=lambda (doc, sim): sim, reverse=True)
+		print(similarities)
+		return [docid for (docid, sim) in similarities]
+
+	def getSimilarity(self, docid, request):
 		similarity=0.
-		for word in q:
-			similarity+=self.index.getIndexWithDocidAndWord(docid,word)
-		similarity/=len(q)
-		similarity/=self.index.getDocumentSize(docid)
+		for word in request.tf:
+			similarity+=request.tf[word]*self.index.getIndexWithDocidAndWord(docid,word)
+		similarity/=request.norm
+		similarity/=self.index.getDocumentNorm(docid)
 		return similarity
+
+	def getTfIdfSimilarity(self, docid, request):
+		similarity=0.
+		for word in request.tf:
+			similarity+=self.index.getTfIdf(docid,word)
+		similarity/=request.norm
+		similarity/=self.index.getTfIdfNorm(docid)
+		return similarity
+
+class Request:
+	def __init__(self, request):
+		self.request = request
+		self.tokens = nltk.word_tokenize(request.lower())
+		self.tf = dict(Counter(self.tokens))
+		self.norm = 0.
 
 
 class BooleanRequest:
@@ -84,3 +107,25 @@ class BooleanRequestParser:
 		acc.append(s[lastComma:])
 		return acc
 		
+if __name__ == "__main__":
+	searchType = raw_input("Type de recherche?\n1: Booleene\n2: Vectorielle\n")
+	filename = raw_input("Chemin vers l'index ou les documents bruts? (searchengine/resources/cacm.all)\n")
+	if filename == "":
+		filename = "searchengine/resources/cacm.all"
+	if searchType == "1":
+		request = raw_input("""Requete? (AND(department,OR(NOT(program),matrix)))\n""")
+		if request == "":
+			request = "AND(department,OR(NOT(program),matrix))"
+		booleanRequest = BooleanRequestParser().parse(request)
+		searchEngine = BooleanSearchEngine(filename,"searchengine/resources/common_words")
+		result = searchEngine.search(booleanRequest)
+		searchEngine.index.persistIndex("searchengine/resources/index.txt")
+		print(result)
+	elif searchType == "2":
+		request = raw_input("""Requete? (department matrix programming)\n""")
+		if request == "":
+			request = "department matrix programming"
+		searchEngine = VectorSearchEngine(filename,"searchengine/resources/common_words")
+		result = searchEngine.search(request)
+		print(result)
+

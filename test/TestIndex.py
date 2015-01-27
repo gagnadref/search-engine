@@ -36,5 +36,13 @@ class TestIndex(unittest.TestCase):
 		index = Index.Index(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
 		self.assertEqual(index.getIndexWithWord("department"),{1:1})
 
+	def test_persistIndex(self):
+		index = Index.Index(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
+		index.persistIndex("index.txt")
+		json = ""
+		with open("index.txt","r") as persistedIndex:
+			json = persistedIndex.read()
+		self.assertEqual(json,"""[{"department": 1, "program": 1, "schemes": 1, "matrix": 1, "techniques": 1}, {"engineering": 1, "computer": 1, "glossary": 1, "of": 1, "programming": 1, "terminology": 1}]""")
+
 if __name__ == "__main__":
 	unittest.main()
