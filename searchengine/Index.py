@@ -73,11 +73,11 @@ class Index:
 	def getIndexWithDocidAndWord(self, docid, word):
 		return self.index[docid-1].get(word,0)
 
-	def getDocumentSize(self, docid):
-		size = 0
-		for word, freq in self.getIndexWithDocid(docid).iteritems():
-			size+=freq
-		return size
+	# def getDocumentSize(self, docid):
+	# 	size = 0
+	# 	for word, freq in self.getIndexWithDocid(docid).iteritems():
+	# 		size+=freq
+	# 	return size
 
 	def getDocumentNorm(self, docid):
 		norm = 0
@@ -85,20 +85,20 @@ class Index:
 			norm+=freq*freq
 		return math.sqrt(norm)
 
-	def getTfIdf(self, docid, word):
-		tf=self.getIndexWithDocidAndWord(docid,word)
-		idf=len(self.getIndexWithWord(word))
-		tfidf=0.
-		if tf>0:
-			tfidf=(1+math.log(tf))*math.log(self.N/idf)
-		return tfidf
+	# def getTfIdf(self, docid, word):
+	# 	tf=self.getIndexWithDocidAndWord(docid,word)
+	# 	idf=len(self.getIndexWithWord(word))
+	# 	tfidf=0.
+	# 	if tf>0:
+	# 		tfidf=(1+math.log(tf))*math.log(self.N/idf)
+	# 	return tfidf
 
-	def getTfIdfNorm(self, docid):
-		norm = 0
-		for word in self.getIndexWithDocid(docid):
-			tfidf=self.getTfIdf(docid, word)
-			norm+=tfidf*tfidf
-		return math.sqrt(norm)		
+	# def getTfIdfNorm(self, docid):
+	# 	norm = 0
+	# 	for word in self.getIndexWithDocid(docid):
+	# 		tfidf=self.getTfIdf(docid, word)
+	# 		norm+=tfidf*tfidf
+	# 	return math.sqrt(norm)		
 
 
 			

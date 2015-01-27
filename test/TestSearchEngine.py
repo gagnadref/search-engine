@@ -27,11 +27,11 @@ class TestSearchEngine(unittest.TestCase):
 		result = searchEngine.search(request)
 		self.assertEqual(result,[1,2])
 
-	def test_searchWithTfIdf(self):
-		request = "department matrix programming"
-		searchEngine = SearchEngine.VectorSearchEngine(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
-		result = searchEngine.searchWithTfIdf(request)
-		self.assertEqual(result,[1,2])
+	# def test_searchWithTfIdf(self):
+	# 	request = "department matrix programming"
+	# 	searchEngine = SearchEngine.VectorSearchEngine(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
+	# 	result = searchEngine.searchWithTfIdf(request)
+	# 	self.assertEqual(result,[1,2])
 
 if __name__ == "__main__":
 	unittest.main()

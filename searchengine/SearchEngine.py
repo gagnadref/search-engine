@@ -10,63 +10,85 @@ class SearchEngine:
 class BooleanSearchEngine(SearchEngine):
 	def __init__(self, documents, commonWords):
 		self.index = Index.Index(documents, commonWords)
-		self.univers = range(1,len(self.index.index)+1)
+		self.universe = range(1,len(self.index.index)+1)
 	
 	# TODO: optimisation: traiter la requete par ordre de frequence croissante 
 	# (memoriser la frequence dans le dictionnaire)
 	def search(self, request):
 		if request.value == "AND":
-			return list(set(self.univers).intersection(*[set(self.search(r)) for r in request.children]))
+			return list(set(self.universe).intersection(*[set(self.search(r)) for r in request.children]))
 		elif request.value == "OR":
 			return list(set().union(*[set(self.search(r)) for r in request.children]))
 		elif request.value == "NOT":
-			return list(set(self.univers)-set(self.search(request.children[0])))
+			return list(set(self.universe)-set(self.search(request.children[0])))
 		else:
 			return self.index.getIndexWithWord(request.value).keys()
 
 class VectorSearchEngine(SearchEngine):
 	def __init__(self, documents, commonWords):
 		self.index = Index.Index(documents, commonWords)
-		self.univers = range(1,self.index.N)
+		self.universe = range(1,len(self.index.index)+1)
 
 	def search(self, request):
-		similarities = []
-		for docid in range(1,len(self.index.index)+1):
-			similarities.append((docid,self.getSimilarity(docid, request)))
-		similarities.sort(key=lambda (doc, sim): sim, reverse=True)
-		return [docid for (docid, sim) in similarities]
+		q = request.split()
+		results = []
+		for docid in self.universe:
+			results.append((docid,self.getSimilarity(docid, q)))
+		results.sort(key=lambda (doc, sim): sim, reverse=True)
+		return [docid for (docid, sim) in results]
 
-	def searchWithTfIdf(self, request):
-		similarities = []
-		for docid in range(1,len(self.index.index)+1):
-			similarities.append((docid,self.getTfIdfSimilarity(docid, request)))
-		similarities.sort(key=lambda (doc, sim): sim, reverse=True)
-		print(similarities)
-		return [docid for (docid, sim) in similarities]
-
-	def getSimilarity(self, docid, request):
+	def getSimilarity(self, docid, q):
 		similarity=0.
-		for word in request.tf:
-			similarity+=request.tf[word]*self.index.getIndexWithDocidAndWord(docid,word)
-		similarity/=request.norm
+		for word in q:
+			similarity+=self.index.getIndexWithDocidAndWord(docid,word)
+		similarity/=math.sqrt(len(q))
 		similarity/=self.index.getDocumentNorm(docid)
 		return similarity
 
-	def getTfIdfSimilarity(self, docid, request):
-		similarity=0.
-		for word in request.tf:
-			similarity+=self.index.getTfIdf(docid,word)
-		similarity/=request.norm
-		similarity/=self.index.getTfIdfNorm(docid)
-		return similarity
+# class VectorSearchEngine(SearchEngine):
+# 	def __init__(self, documents, commonWords):
+# 		self.index = Index.Index(documents, commonWords)
+# 		self.universe = range(1,self.index.N)
 
-class Request:
-	def __init__(self, request):
-		self.request = request
-		self.tokens = nltk.word_tokenize(request.lower())
-		self.tf = dict(Counter(self.tokens))
-		self.norm = 0.
+# 	def search(self, request):
+# 		q = Request(request)
+# 		similarities = []
+# 		for docid in self.universe:
+# 			similarities.append((docid,self.getSimilarity(docid, q)))
+# 		similarities.sort(key=lambda (doc, sim): sim, reverse=True)
+# 		return [docid for (docid, sim) in similarities]
 
+# 	def searchWithTfIdf(self, request):
+# 		q = Request(request)
+# 		similarities = []
+# 		for docid in self.universe:
+# 			similarities.append((docid,self.getTfIdfSimilarity(docid, q)))
+# 		similarities.sort(key=lambda (doc, sim): sim, reverse=True)
+# 		print(similarities)
+# 		return [docid for (docid, sim) in similarities]
+
+# 	def getSimilarity(self, docid, q):
+# 		similarity=0.
+# 		for word in q.tf:
+# 			similarity+=q.tf[word]*self.index.getIndexWithDocidAndWord(docid,word)
+# 		similarity/=q.norm
+# 		similarity/=self.index.getDocumentNorm(docid)
+# 		return similarity
+
+# 	def getTfIdfSimilarity(self, docid, q):
+# 		similarity=0.
+# 		for word in q.tf:
+# 			similarity+=self.index.getTfIdf(docid,word)
+# 		similarity/=q.norm
+# 		similarity/=self.index.getTfIdfNorm(docid)
+# 		return similarity
+
+# class Request:
+# 	def __init__(self, request):
+# 		self.request = request
+# 		self.tokens = nltk.word_tokenize(request.lower())
+# 		self.tf = dict(Counter(self.tokens))
+# 		self.norm = 0.
 
 class BooleanRequest:
 	def __init__(self, value, children = []):
@@ -107,25 +129,3 @@ class BooleanRequestParser:
 		acc.append(s[lastComma:])
 		return acc
 		
-if __name__ == "__main__":
-	searchType = raw_input("Type de recherche?\n1: Booleene\n2: Vectorielle\n")
-	filename = raw_input("Chemin vers l'index ou les documents bruts? (searchengine/resources/cacm.all)\n")
-	if filename == "":
-		filename = "searchengine/resources/cacm.all"
-	if searchType == "1":
-		request = raw_input("""Requete? (AND(department,OR(NOT(program),matrix)))\n""")
-		if request == "":
-			request = "AND(department,OR(NOT(program),matrix))"
-		booleanRequest = BooleanRequestParser().parse(request)
-		searchEngine = BooleanSearchEngine(filename,"searchengine/resources/common_words")
-		result = searchEngine.search(booleanRequest)
-		searchEngine.index.persistIndex("searchengine/resources/index.txt")
-		print(result)
-	elif searchType == "2":
-		request = raw_input("""Requete? (department matrix programming)\n""")
-		if request == "":
-			request = "department matrix programming"
-		searchEngine = VectorSearchEngine(filename,"searchengine/resources/common_words")
-		result = searchEngine.search(request)
-		print(result)
-
