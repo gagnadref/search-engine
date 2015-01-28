@@ -12,7 +12,7 @@ class Index:
 			else:
 				self.index = self.createIndexFromPersistedIndex(documents)
 			self.inversedIndex = self.inverseIndex()
-			self.N = len(self.index)+1
+			self.N = len(self.index)
 
 	def getCommonWords(self, filename): 
 		commonWords = []
@@ -61,23 +61,17 @@ class Index:
 		for docid, frequences in enumerate(self.index):
 			for word, freq in frequences.iteritems():
 				inversedIndex[word] = inversedIndex.get(word, {})
-				inversedIndex[word][docid+1] = freq
+				inversedIndex[word][docid] = freq
 		return inversedIndex
 
 	def getIndexWithDocid(self, docid):
-		return self.index[docid-1]
+		return self.index[docid]
 
 	def getIndexWithWord(self, word):
 		return self.inversedIndex.get(word,{})
 
 	def getIndexWithDocidAndWord(self, docid, word):
-		return self.index[docid-1].get(word,0)
-
-	# def getDocumentSize(self, docid):
-	# 	size = 0
-	# 	for word, freq in self.getIndexWithDocid(docid).iteritems():
-	# 		size+=freq
-	# 	return size
+		return self.index[docid].get(word,0)
 
 	def getDocumentNorm(self, docid):
 		norm = 0
@@ -85,20 +79,57 @@ class Index:
 			norm+=freq*freq
 		return math.sqrt(norm)
 
-	# def getTfIdf(self, docid, word):
-	# 	tf=self.getIndexWithDocidAndWord(docid,word)
-	# 	idf=len(self.getIndexWithWord(word))
-	# 	tfidf=0.
-	# 	if tf>0:
-	# 		tfidf=(1+math.log(tf))*math.log(self.N/idf)
-	# 	return tfidf
+	# def getDocumentSize(self, docid):
+	# 	size = 0
+	# 	for word, freq in self.getIndexWithDocid(docid).iteritems():
+	# 		size+=freq
+	# 	return size
 
-	# def getTfIdfNorm(self, docid):
-	# 	norm = 0
-	# 	for word in self.getIndexWithDocid(docid):
-	# 		tfidf=self.getTfIdf(docid, word)
-	# 		norm+=tfidf*tfidf
-	# 	return math.sqrt(norm)		
+
+class NormalizedIndex(Index):
+	def __init__(self, documents="", commonWords=""):
+		Index.__init__(self, documents, commonWords)
+		if documents != "":
+			self.index = self.getNormalizedIndex()
+			self.inversedIndex = self.inverseIndex()
+
+	def getNormalizedIndex(self):
+		normalizedFrequenceIndex = range(0,self.N)
+		for docid, frequences in enumerate(self.index):
+			maxFreq = 0
+			for word, freq in frequences.iteritems():
+				if freq > maxFreq:
+					maxFreq = freq
+			doc = {}
+			for word, freq in frequences.iteritems():
+				doc[word] = freq/float(maxFreq)
+			normalizedFrequenceIndex[docid] = doc
+		return normalizedFrequenceIndex
+
+
+class TfIdfIndex(Index):
+	def __init__(self, documents="", commonWords=""):
+		Index.__init__(self, documents, commonWords)
+		if documents != "":
+			self.index = self.getTfIdfIndex()
+			self.inversedIndex = self.inverseIndex()
+
+	def getTfIdf(self, docid, word):
+		tf=self.getIndexWithDocidAndWord(docid,word)
+		idf=len(self.getIndexWithWord(word))
+		tfidf=0.
+		if tf>0:
+			tfidf=math.log(1+tf,10)*math.log(self.N/idf,10)
+		return tfidf
+
+	def getTfIdfIndex(self):
+		tfIdfIndex = range(0,self.N)
+		for docid, frequences in enumerate(self.index):
+			doc = {}
+			for word in frequences:
+				doc[word] = self.getTfIdf(docid, word)
+			tfIdfIndex[docid] = doc
+		return tfIdfIndex
 
 
 			

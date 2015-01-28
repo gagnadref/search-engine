@@ -4,14 +4,14 @@ import math
 from collections import Counter
 
 class SearchEngine:
+	def __init__(self, index):
+		self.index = index
+		self.universe = range(0,len(self.index.index))
+
 	def search(self, request):
 		raise Exception("Abstract method search should have been implemented")
 
 class BooleanSearchEngine(SearchEngine):
-	def __init__(self, documents, commonWords):
-		self.index = Index.Index(documents, commonWords)
-		self.universe = range(1,len(self.index.index)+1)
-	
 	# TODO: optimisation: traiter la requete par ordre de frequence croissante 
 	# (memoriser la frequence dans le dictionnaire)
 	def search(self, request):
@@ -25,15 +25,13 @@ class BooleanSearchEngine(SearchEngine):
 			return self.index.getIndexWithWord(request.value).keys()
 
 class VectorSearchEngine(SearchEngine):
-	def __init__(self, documents, commonWords):
-		self.index = Index.Index(documents, commonWords)
-		self.universe = range(1,len(self.index.index)+1)
-
 	def search(self, request):
 		q = request.split()
 		results = []
 		for docid in self.universe:
-			results.append((docid,self.getSimilarity(docid, q)))
+			similarity = self.getSimilarity(docid, q)
+			if similarity > 0.:
+				results.append((docid,similarity))
 		results.sort(key=lambda (doc, sim): sim, reverse=True)
 		return [docid for (docid, sim) in results]
 
@@ -44,51 +42,6 @@ class VectorSearchEngine(SearchEngine):
 		similarity/=math.sqrt(len(q))
 		similarity/=self.index.getDocumentNorm(docid)
 		return similarity
-
-# class VectorSearchEngine(SearchEngine):
-# 	def __init__(self, documents, commonWords):
-# 		self.index = Index.Index(documents, commonWords)
-# 		self.universe = range(1,self.index.N)
-
-# 	def search(self, request):
-# 		q = Request(request)
-# 		similarities = []
-# 		for docid in self.universe:
-# 			similarities.append((docid,self.getSimilarity(docid, q)))
-# 		similarities.sort(key=lambda (doc, sim): sim, reverse=True)
-# 		return [docid for (docid, sim) in similarities]
-
-# 	def searchWithTfIdf(self, request):
-# 		q = Request(request)
-# 		similarities = []
-# 		for docid in self.universe:
-# 			similarities.append((docid,self.getTfIdfSimilarity(docid, q)))
-# 		similarities.sort(key=lambda (doc, sim): sim, reverse=True)
-# 		print(similarities)
-# 		return [docid for (docid, sim) in similarities]
-
-# 	def getSimilarity(self, docid, q):
-# 		similarity=0.
-# 		for word in q.tf:
-# 			similarity+=q.tf[word]*self.index.getIndexWithDocidAndWord(docid,word)
-# 		similarity/=q.norm
-# 		similarity/=self.index.getDocumentNorm(docid)
-# 		return similarity
-
-# 	def getTfIdfSimilarity(self, docid, q):
-# 		similarity=0.
-# 		for word in q.tf:
-# 			similarity+=self.index.getTfIdf(docid,word)
-# 		similarity/=q.norm
-# 		similarity/=self.index.getTfIdfNorm(docid)
-# 		return similarity
-
-# class Request:
-# 	def __init__(self, request):
-# 		self.request = request
-# 		self.tokens = nltk.word_tokenize(request.lower())
-# 		self.tf = dict(Counter(self.tokens))
-# 		self.norm = 0.
 
 class BooleanRequest:
 	def __init__(self, value, children = []):
