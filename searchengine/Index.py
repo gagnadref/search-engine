@@ -79,11 +79,25 @@ class Index:
 			norm+=freq*freq
 		return math.sqrt(norm)
 
-	# def getDocumentSize(self, docid):
-	# 	size = 0
-	# 	for word, freq in self.getIndexWithDocid(docid).iteritems():
-	# 		size+=freq
-	# 	return size
+	def getTf(self, docid, word):
+		return self.getIndexWithDocidAndWord(docid,word)
+
+	def getIdf(self, docid, word):
+		return len(self.getIndexWithWord(word))
+
+	def getTfIdf(self, docid, word):
+		tf = self.getTf(docid, word)
+		idf = self.getIdf(docid, word)
+		tfidf=0.
+		if tf>0:
+			tfidf=math.log(1+tf,10)*math.log(self.N/idf,10)
+		return tfidf
+
+	def getDocumentSize(self, docid):
+		size = 0
+		for word, freq in self.getIndexWithDocid(docid).iteritems():
+			size+=freq
+		return size
 
 
 class NormalizedIndex(Index):
@@ -113,14 +127,6 @@ class TfIdfIndex(Index):
 		if documents != "":
 			self.index = self.getTfIdfIndex()
 			self.inversedIndex = self.inverseIndex()
-
-	def getTfIdf(self, docid, word):
-		tf=self.getIndexWithDocidAndWord(docid,word)
-		idf=len(self.getIndexWithWord(word))
-		tfidf=0.
-		if tf>0:
-			tfidf=math.log(1+tf,10)*math.log(self.N/idf,10)
-		return tfidf
 
 	def getTfIdfIndex(self):
 		tfIdfIndex = range(0,self.N)

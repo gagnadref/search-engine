@@ -37,5 +37,33 @@ class TestSearchEngine(unittest.TestCase):
 		result = searchEngine.search(request)
 		self.assertEqual(result,[0,1])
 
+	def test_ProbabilsticSearchEngine(self):
+		request = "department matrix programming"
+		index = Index.Index(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
+		searchEngine = SearchEngine.ProbabilisticSearchEngine(index)
+		result = searchEngine.search(request)
+		self.assertEqual(result,[0,1])
+
+	def test_DiceSearchEngine(self):
+		request = "department matrix programming"
+		index = Index.Index(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
+		searchEngine = SearchEngine.DiceSearchEngine(index)
+		result = searchEngine.search(request)
+		self.assertEqual(result,[0,1])
+
+	def test_JaccardSearchEngine(self):
+		request = "department matrix programming"
+		index = Index.Index(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
+		searchEngine = SearchEngine.JaccardSearchEngine(index)
+		result = searchEngine.search(request)
+		self.assertEqual(result,[0,1])
+
+	def test_OverlapSearchEngine(self):
+		request = "department matrix programming"
+		index = Index.Index(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
+		searchEngine = SearchEngine.OverlapSearchEngine(index)
+		result = searchEngine.search(request)
+		self.assertEqual(result,[0,1])
+
 if __name__ == "__main__":
 	unittest.main()

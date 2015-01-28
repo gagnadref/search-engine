@@ -36,11 +36,46 @@ class VectorSearchEngine(SearchEngine):
 		return [docid for (docid, sim) in results]
 
 	def getSimilarity(self, docid, q):
-		similarity=0.
+		similarity = 0.
 		for word in q:
 			similarity+=self.index.getIndexWithDocidAndWord(docid,word)
 		similarity/=math.sqrt(len(q))
 		similarity/=self.index.getDocumentNorm(docid)
+		return similarity
+
+class ProbabilisticSearchEngine(VectorSearchEngine):
+	def getSimilarity(self, docid, q):
+		similarity = 0.
+		for word in q:
+			freq = self.index.getIndexWithDocidAndWord(docid,word)
+			if freq > 0:
+				idf = self.index.getIdf(docid, word)
+				similarity += math.log(1+idf)*math.log(self.index.N/idf)
+		return similarity
+
+class DiceSearchEngine(VectorSearchEngine):
+	def getSimilarity(self, docid, q):
+		similarity = 0.
+		for word in q:
+			similarity+=self.index.getIndexWithDocidAndWord(docid,word)
+		similarity*=2
+		similarity/=self.index.getDocumentSize(docid)+len(q)
+		return similarity
+
+class JaccardSearchEngine(VectorSearchEngine):
+	def getSimilarity(self, docid, q):
+		similarity = 0.
+		for word in q:
+			similarity+=self.index.getIndexWithDocidAndWord(docid,word)
+		similarity/=self.index.getDocumentSize(docid)+len(q)-similarity
+		return similarity
+
+class OverlapSearchEngine(VectorSearchEngine):
+	def getSimilarity(self, docid, q):
+		similarity = 0.
+		for word in q:
+			similarity+=self.index.getIndexWithDocidAndWord(docid,word)
+		similarity/=min(self.index.getDocumentSize(docid),len(q))
 		return similarity
 
 class BooleanRequest:

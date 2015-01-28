@@ -49,6 +49,11 @@ class TestIndex(unittest.TestCase):
 		normalizedIndex = Index.NormalizedIndex(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
 		self.assertEqual(normalizedIndex.index,[{'department': 1., 'program': 1., 'schemes': 1., 'matrix': 1., 'techniques': 1}, {'glossary': 0.5, 'of': 0.5, 'programming': 0.5, 'engineering': 0.5, 'computer': 1., 'terminology': 0.5}])
 
+	def test_getTfIdf(self):
+		index = Index.Index(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
+		tfIdf = index.getTfIdf(1,"computer")
+		self.assertEqual(tfIdf, math.log(3,10)*math.log(2,10))
+
 	def test_getTfIdfIndex(self):
 		tfIdfIndex = Index.TfIdfIndex(os.path.abspath(os.path.join(testdir, "resources/test_cacm.all")),os.path.abspath(os.path.join(testdir, "resources/common_words")))
 		self.assertEqual(tfIdfIndex.index[1]["computer"],math.log(3,10)*math.log(2,10))
