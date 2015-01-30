@@ -1,3 +1,4 @@
+import sys
 import nltk
 import math
 from collections import Counter
@@ -13,6 +14,23 @@ class Index:
 				self.index = self.createIndexFromPersistedIndex(documents)
 			self.inversedIndex = self.inverseIndex()
 			self.N = len(self.index)
+
+	def __sizeof__(self):
+		sizeof = sys.getsizeof(self.index)
+		for doc in self.index:
+			sizeof += sys.getsizeof(doc)
+			for word, freq in doc.iteritems():
+				sizeof += sys.getsizeof(word)
+				sizeof += sys.getsizeof(freq)
+		sizeof += sys.getsizeof(self.inversedIndex)
+		for word, frequences in self.inversedIndex.iteritems():
+			sizeof += sys.getsizeof(word)
+			sizeof += sys.getsizeof(frequences)
+			for docid, freq in frequences.iteritems():
+				sizeof += sys.getsizeof(docid)
+				sizeof += sys.getsizeof(freq)
+		return sizeof
+
 
 	def getCommonWords(self, filename): 
 		commonWords = []
