@@ -1,6 +1,6 @@
-import Index
-import nltk
+import index as Index
 import math
+import Stemmer
 from collections import Counter
 
 class SearchEngine:
@@ -12,8 +12,6 @@ class SearchEngine:
 		raise Exception("Abstract method search should have been implemented")
 
 class BooleanSearchEngine(SearchEngine):
-	# TODO: optimisation: traiter la requete par ordre de frequence croissante 
-	# (memoriser la frequence dans le dictionnaire)
 	def search(self, request):
 		if request.value == "AND":
 			return list(set(self.universe).intersection(*[set(self.search(r)) for r in request.children]))
@@ -58,8 +56,8 @@ class DiceSearchEngine(VectorSearchEngine):
 		similarity = 0.
 		for word in q:
 			similarity+=self.index.getIndexWithDocidAndWord(docid,word)
-		similarity*=2
-		similarity/=self.index.getDocumentSize(docid)+len(q)
+		similarity = similarity*2
+		similarity = similarity/(self.index.getDocumentSize(docid)+len(q))
 		return similarity
 
 class JaccardSearchEngine(VectorSearchEngine):
@@ -67,7 +65,7 @@ class JaccardSearchEngine(VectorSearchEngine):
 		similarity = 0.
 		for word in q:
 			similarity+=self.index.getIndexWithDocidAndWord(docid,word)
-		similarity/=self.index.getDocumentSize(docid)+len(q)-similarity
+		similarity = similarity / (self.index.getDocumentSize(docid)+len(q)-similarity)
 		return similarity
 
 class OverlapSearchEngine(VectorSearchEngine):
@@ -92,6 +90,9 @@ class BooleanRequest:
 		return s
 
 class BooleanRequestParser:
+	def __init__(self):
+		self.stemmer = Stemmer.Stemmer("english")
+
 	def parse(self, request):
 		if request[:4]=="AND(":
 			return BooleanRequest("AND",map(self.parse, self.split(request[4:-1])))
@@ -100,7 +101,7 @@ class BooleanRequestParser:
 		elif request[:4]=="NOT(":
 			return BooleanRequest("NOT",[self.parse(request[4:-1])])
 		else:
-			return BooleanRequest(request)
+			return BooleanRequest(self.stemmer.stemWord(request))
 
 	def split(self,s):
 		acc=[]

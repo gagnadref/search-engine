@@ -1,17 +1,19 @@
 import sys
 import nltk
+import Stemmer
 import math
 from collections import Counter
 import json
 
 class Index:
-	def __init__(self, documents="", commonWords=""):
-		if documents != "":
+	def __init__(self, cacmFilename="", commonWords="", indexFilename=""):
+		if cacmFilename != "":
 			self.commonWords = self.getCommonWords(commonWords)
-			if documents[-4:]==".all":
-				self.index = self.createIndexFromCACMFile(documents)
+			self.setListOfDocuments(cacmFilename)
+			if  indexFilename=="":
+				self.index = self.createIndexFromCACMFile()
 			else:
-				self.index = self.createIndexFromPersistedIndex(documents)
+				self.index = self.createIndexFromPersistedIndex(indexFilename)
 			self.inversedIndex = self.inverseIndex()
 			self.N = len(self.index)
 
@@ -39,20 +41,18 @@ class Index:
 				commonWords.append(line.rstrip())
 		return commonWords
 
-	def createIndexFromCACMFile(self,filename):
+	def createIndexFromCACMFile(self):
 		index = []
-		with open(filename,"r") as cacmFile:
-			listOfDocuments = self.splitCACMFile(cacmFile)
-		for doc in listOfDocuments:
+		for doc in self.listOfDocuments:
 			cacm = CACMParser.parse(doc)
 			cacm.tokenize()
 			cacm.removeCommonWords(self.commonWords)
 			index.append(cacm.getFrequences())
 		return index
 
-	def createIndexFromPersistedIndex(self, filename):
+	def createIndexFromPersistedIndex(self, indexFilename):
 		index = []
-		with open(filename,"r") as persistedIndex:
+		with open(indexFilename,"r") as persistedIndex:
 			index = json.loads(persistedIndex.read())
 		return index
 
@@ -61,7 +61,7 @@ class Index:
 		with open(filename, "w") as persistedIndex:
 			persistedIndex.write(jsonIndex)
 
-
+	@classmethod
 	def splitCACMFile(self, cacmFile):
 		listOfDocuments = []
 		currentDocument = ""
@@ -117,11 +117,18 @@ class Index:
 			size+=freq
 		return size
 
+	def setListOfDocuments(self, cacmFilename):
+		with open(cacmFilename,"r") as cacmFile:
+			self.listOfDocuments = self.splitCACMFile(cacmFile)
+
+	def getDocument(self, docid):
+		return self.listOfDocuments[docid]
+
 
 class NormalizedIndex(Index):
-	def __init__(self, documents="", commonWords=""):
-		Index.__init__(self, documents, commonWords)
-		if documents != "":
+	def __init__(self, cacmFilename="", commonWords="", indexFilename=""):
+		Index.__init__(self, cacmFilename, commonWords, indexFilename)
+		if cacmFilename != "":
 			self.index = self.getNormalizedIndex()
 			self.inversedIndex = self.inverseIndex()
 
@@ -140,9 +147,9 @@ class NormalizedIndex(Index):
 
 
 class TfIdfIndex(Index):
-	def __init__(self, documents="", commonWords=""):
-		Index.__init__(self, documents, commonWords)
-		if documents != "":
+	def __init__(self, cacmFilename="", commonWords="", indexFilename=""):
+		Index.__init__(self, cacmFilename, commonWords, indexFilename)
+		if cacmFilename != "":
 			self.index = self.getTfIdfIndex()
 			self.inversedIndex = self.inverseIndex()
 
@@ -175,6 +182,8 @@ class CACM:
 		self.tokens += tokenizer.tokenize(self.title.lower())
 		self.tokens += tokenizer.tokenize(self.summary.lower())
 		self.tokens += tokenizer.tokenize(self.keyWords.lower())
+		stemmer = Stemmer.Stemmer('english') 
+		self.tokens = map(stemmer.stemWord, self.tokens)
 
 	def removeCommonWords(self, commonWords) :
 		self.tokens = [word for word in self.tokens if word not in commonWords]
