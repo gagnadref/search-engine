@@ -47,6 +47,7 @@ class Index:
 			cacm = CACMParser.parse(doc)
 			cacm.tokenize()
 			cacm.removeCommonWords(self.commonWords)
+			cacm.stem()
 			index.append(cacm.getFrequences())
 		return index
 
@@ -182,6 +183,8 @@ class CACM:
 		self.tokens += tokenizer.tokenize(self.title.lower())
 		self.tokens += tokenizer.tokenize(self.summary.lower())
 		self.tokens += tokenizer.tokenize(self.keyWords.lower())
+
+	def stem(self):
 		stemmer = Stemmer.Stemmer('english') 
 		self.tokens = map(stemmer.stemWord, self.tokens)
 

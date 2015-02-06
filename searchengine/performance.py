@@ -2,6 +2,7 @@ import index as Index
 import searchengine as SearchEngine
 import time
 import curve as Curve
+import measure as Measure
 
 class Performance:
 	@classmethod
@@ -19,7 +20,7 @@ class Performance:
 			curve = cls.testSearchEngine(searchEngine, testQueries, measure)
 			curve.name = searchEngine.__class__.__name__ + "-" + searchEngine.index.__class__.__name__
 			curves.append(curve)
-		CSVFile.exportToCSV(curves, filename)
+		Curve.CSVFile.exportToCSV(curves, filename)
 
 	@classmethod
 	def compareMeasure(cls, searchEngine, testQueries, listOfMeasures, filename):
@@ -28,7 +29,7 @@ class Performance:
 			curve = cls.testSearchEngine(searchEngine, testQueries, measure)
 			curve.name = measure.__name__
 			curves.append(curve)
-		CSVFile.exportToCSV(curves, filename)
+		Curve.CSVFile.exportToCSV(curves, filename)
 
 	@classmethod
 	def testSearchEngine(cls, searchEngine, testQueries, measure):
@@ -104,31 +105,6 @@ class TestQuery:
 		self.expectedResult = expectedResult
 
 
-class Measure:
-	@classmethod
-	def getRecall(cls, tp, fp, fn):
-		return float(tp) / (tp + fn)
-
-class Precision(Measure):
-	@classmethod
-	def getMeasure(cls, tp, fp, fn):
-		return float(tp) / (tp + fp)
-
-class FMeasure(Precision):
-	@classmethod
-	def getMeasure(cls, tp, fp, fn):
-		p = Precision.getMeasure(tp, fp, fn)
-		r = cls.getRecall(tp, fp, fn)
-		if p+r == 0:
-			return 0.
-		else :
-			return 2*p*r/(p+r)
-
-class EMeasure(FMeasure):
-	@classmethod
-	def getMeasure(cls, tp, fp, fn):
-		return 1 - FMeasure.getMeasure(tp, fp, fn)
-
 if __name__ == "__main__":
 	cacmFilename = "searchengine/resources/cacm.all"
 	commonWords = "searchengine/resources/common_words"
@@ -151,8 +127,8 @@ if __name__ == "__main__":
 	searchTime = Performance.getSearchTime(probabilistic_index, testQueries)
 	print("Temps d'execution des {0} requetes : {1}s".format(len(testQueries),searchTime))
 
-	Performance.compareSearchEngines([vector_index, dice_index, jaccard_index, overlap_index, probabilistic_index], testQueries, Precision, "MesureSimilarite.csv")
-	Performance.compareSearchEngines([vector_index, vector_normalizedIndex, vector_tfidfIndex], testQueries, Precision, "Ponderation.csv")
-	Performance.compareMeasure(vector_index, testQueries, [Precision, FMeasure, EMeasure], "MesuresPerformance.csv")
+	Performance.compareSearchEngines([vector_index, dice_index, jaccard_index, overlap_index, probabilistic_index], testQueries, Measure.Precision, "MesureSimilarite.csv")
+	Performance.compareSearchEngines([vector_index, vector_normalizedIndex, vector_tfidfIndex], testQueries, Measure.Precision, "Ponderation.csv")
+	Performance.compareMeasure(vector_index, testQueries, [Measure.Precision, Measure.FMeasure, Measure.EMeasure], "MesuresPerformance.csv")
 
 
